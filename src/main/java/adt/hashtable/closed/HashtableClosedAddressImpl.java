@@ -119,8 +119,19 @@ public class HashtableClosedAddressImpl<T> extends
 
 	@Override
 	public int indexOf(T element) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Not implemented yet!");
-	}
+		int hash = ((HashFunctionClosedAddress<T>) this.hashFunction).hash(element);
+		ArrayList<T> list = (ArrayList<T>) this.table[hash];
+		int index = -1;
+
+		if (list != null) {
+			for (int i = 0; i < list.size(); i++){
+				if (list.get(i) == element) {
+					index = i;
+				}
+			}
+		}
+		
+		return index;
+	} 
 
 }
