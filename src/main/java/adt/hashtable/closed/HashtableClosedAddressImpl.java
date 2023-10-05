@@ -1,15 +1,14 @@
 package adt.hashtable.closed;
 
-import java.util.ArrayList;
-import util.Util;
-
 import adt.hashtable.hashfunction.HashFunction;
 import adt.hashtable.hashfunction.HashFunctionClosedAddress;
 import adt.hashtable.hashfunction.HashFunctionClosedAddressMethod;
 import adt.hashtable.hashfunction.HashFunctionFactory;
+import util.Util;
 
-public class HashtableClosedAddressImpl<T> extends
-		AbstractHashtableClosedAddress<T> {
+import java.util.LinkedList;
+
+public class HashtableClosedAddressImpl<T> extends AbstractHashtableClosedAddress<T> {
 
 	/**
 	 * A hash table with closed address works with a hash function with closed
@@ -33,8 +32,7 @@ public class HashtableClosedAddressImpl<T> extends
 	 */
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public HashtableClosedAddressImpl(int desiredSize,
-			HashFunctionClosedAddressMethod method) {
+	public HashtableClosedAddressImpl(int desiredSize, HashFunctionClosedAddressMethod method) {
 		int realSize = desiredSize;
 
 		if (method == HashFunctionClosedAddressMethod.DIVISION) {
@@ -43,8 +41,7 @@ public class HashtableClosedAddressImpl<T> extends
 														// above
 		}
 		initiateInternalTable(realSize);
-		HashFunction function = HashFunctionFactory.createHashFunction(method,
-				realSize);
+		HashFunction function = HashFunctionFactory.createHashFunction(method, realSize);
 		this.hashFunction = function;
 	}
 
@@ -57,81 +54,56 @@ public class HashtableClosedAddressImpl<T> extends
 	 * prime.
 	 */
 	int getPrimeAbove(int number) {
-		int prime = number + 1;
-		while (!Util.isPrime(prime)) {
-			prime += 1;
-		} 
-		return prime;
+		while (!Util.isPrime(number))
+			number++;
+		return number;
+	}
+
+	private int hash (T element) {
+		return ((HashFunctionClosedAddress<T>) this.hashFunction).hash(element);
 	}
 
 	@Override
 	public void insert(T element) {
-		int hash = ((HashFunctionClosedAddress<T>) this.hashFunction).hash(element);
-		ArrayList<T> list = (ArrayList<T>) this.table[hash];
-		
-		if (list == null) {
-			list = new ArrayList<T>();
-			list.add(element);
-			this.table[hash] = list;
-		} else {
-			for (int i = 0; i < list.size(); i++) {
-				if (list.get(i).hashCode() == element.hashCode()) {
-					list.set(i, element);
-					return;}
-			}
-			this.COLLISIONS += 1;
-			list.add(element);
+		if (element != null && this.indexOf(element) == -1) {
+			int hash = this.hash(element);
+			if (this.table[hash] == null)
+				this.table[hash] = new LinkedList<T>();
+			else
+				this.COLLISIONS++;
+			((LinkedList<T>) this.table[hash]).addFirst(element);
+			this.elements++;
 		}
-		this.elements += 1;
 	}
 
 	@Override
 	public void remove(T element) {
-		int hash = ((HashFunctionClosedAddress<T>) this.hashFunction).hash(element);
-		ArrayList<T> list = (ArrayList<T>) this.table[hash];
-
-		if (list != null) {
-			if (list.size() > 1) {this.COLLISIONS -=1;}
-			for (T e: list) {
-				if (e.equals(element)) {
-					list.remove(element);
-				}
+		if (element != null && !this.isEmpty()) {
+			int index = this.indexOf(element);
+			if (index != -1) {
+				LinkedList<T> list = (LinkedList<T>) this.table[index];
+				if (list.size() > 1)
+					this.COLLISIONS--;
+				list.remove(element);
+				this.elements--;
 			}
-			this.elements -= 1;	
 		}
 	}
 
 	@Override
 	public T search(T element) {
-		int hash = ((HashFunctionClosedAddress<T>) this.hashFunction).hash(element);
-		ArrayList<T> list = (ArrayList<T>) this.table[hash];
-		T out = null;
-
-		if (list != null) {
-			for (T e: list) {
-				if (e.equals(element)) {
-					out = e;
-				}
-			}
-		}
-		return out;
+		return this.indexOf(element) != -1 ? element : null;
 	}
 
 	@Override
 	public int indexOf(T element) {
-		int hash = ((HashFunctionClosedAddress<T>) this.hashFunction).hash(element);
-		ArrayList<T> list = (ArrayList<T>) this.table[hash];
-		int index = -1;
-
-		if (list != null) {
-			for (int i = 0; i < list.size(); i++){
-				if (list.get(i) == element) {
-					index = i;
-				}
-			}
+		if (element != null && !this.isEmpty()) {
+			int hash = this.hash(element);
+			LinkedList<T> list = (LinkedList<T>) this.table[hash];
+			if (list != null && list.contains(element))
+				return hash;
 		}
-		
-		return index;
-	} 
+		return -1;
+	}
 
 }
